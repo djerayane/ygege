@@ -17,7 +17,6 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
-  DOCKER_HUB: uwucode/ygege
 
 jobs:
   changelog:
@@ -310,12 +309,6 @@ jobs:
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
@@ -347,9 +340,7 @@ jobs:
             BUILD_COMMIT=${{ github.sha }}
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             BUILD_BRANCH=${{ github.ref_name }}
-          outputs: |
-            type=image,push-by-digest=true,name=uwucode/ygege,push=true
-            type=image,push-by-digest=true,name=ghcr.io/${{ env.OWNER_LC }}/ygege,push=true
+          outputs: type=image,push-by-digest=true,name=ghcr.io/${{ env.OWNER_LC }}/ygege,push=true
           cache-from: type=gha,scope=${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}
           provenance: false
@@ -393,12 +384,6 @@ jobs:
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
@@ -431,9 +416,7 @@ jobs:
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             BUILD_BRANCH=${{ github.ref_name }}
             SKIP_UPX=1
-          outputs: |
-            type=image,push-by-digest=true,name=uwucode/ygege,push=true
-            type=image,push-by-digest=true,name=ghcr.io/${{ env.OWNER_LC }}/ygege,push=true
+          outputs: type=image,push-by-digest=true,name=ghcr.io/${{ env.OWNER_LC }}/ygege,push=true
           cache-from: type=gha,scope=${{ matrix.platform }}-noupx
           cache-to: type=gha,mode=max,scope=${{ matrix.platform }}-noupx
           provenance: false
@@ -461,12 +444,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
@@ -486,7 +463,7 @@ jobs:
           VERSION="${{ env.VERSION }}"
           # Remove 'v' prefix if present
           VERSION_NUM="${VERSION#v}"
-          
+
           if [[ "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             # Stable release (e.g., v1.2.3)
             MAJOR=$(echo "$VERSION_NUM" | cut -d. -f1)
@@ -496,7 +473,7 @@ jobs:
             # Pre-release (e.g., v1.0.0-rc.1)
             TAGS="$VERSION_NUM"
           fi
-          
+
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "Generated tags: $TAGS"
 
@@ -505,14 +482,6 @@ jobs:
           TAGS="${{ steps.tags.outputs.tags }}"
           for TAG in $TAGS; do
             echo "Creating manifest for tag: $TAG"
-            
-            # Docker Hub manifest
-            docker manifest create uwucode/ygege:$TAG \
-              --amend uwucode/ygege@${{ needs.docker.outputs.digest-amd64 }} \
-              --amend uwucode/ygege@${{ needs.docker.outputs.digest-arm64 }}
-            docker manifest push uwucode/ygege:$TAG
-            
-            # GHCR manifest
             docker manifest create ghcr.io/${{ env.OWNER_LC }}/ygege:$TAG \
               --amend ghcr.io/${{ env.OWNER_LC }}/ygege@${{ needs.docker.outputs.digest-amd64 }} \
               --amend ghcr.io/${{ env.OWNER_LC }}/ygege@${{ needs.docker.outputs.digest-arm64 }}
@@ -524,9 +493,9 @@ jobs:
         run: |
           VERSION="${{ env.VERSION }}"
           VERSION_NUM="${VERSION#v}"
-          
-          DIGEST=$(docker buildx imagetools inspect "uwucode/ygege:$VERSION_NUM" --format '{{json .Manifest}}' | jq -r '.digest')
-          
+
+          DIGEST=$(docker buildx imagetools inspect "ghcr.io/${{ env.OWNER_LC }}/ygege:$VERSION_NUM" --format '{{json .Manifest}}' | jq -r '.digest')
+
           echo "IMAGE_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
           echo "Manifest digest: $DIGEST"
 
@@ -547,12 +516,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
@@ -572,7 +535,7 @@ jobs:
           VERSION="${{ env.VERSION }}"
           # Remove 'v' prefix if present
           VERSION_NUM="${VERSION#v}"
-          
+
           if [[ "$VERSION" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             # Stable release (e.g., v1.2.3)
             MAJOR=$(echo "$VERSION_NUM" | cut -d. -f1)
@@ -582,7 +545,7 @@ jobs:
             # Pre-release (e.g., v1.0.0-rc.1)
             TAGS="${VERSION_NUM}-noupx"
           fi
-          
+
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
           echo "Generated noupx tags: $TAGS"
 
@@ -591,14 +554,6 @@ jobs:
           TAGS="${{ steps.tags.outputs.tags }}"
           for TAG in $TAGS; do
             echo "Creating manifest for tag: $TAG"
-            
-            # Docker Hub manifest
-            docker manifest create uwucode/ygege:$TAG \
-              --amend uwucode/ygege@${{ needs.docker-noupx.outputs.digest-amd64 }} \
-              --amend uwucode/ygege@${{ needs.docker-noupx.outputs.digest-arm64 }}
-            docker manifest push uwucode/ygege:$TAG
-            
-            # GHCR manifest
             docker manifest create ghcr.io/${{ env.OWNER_LC }}/ygege:$TAG \
               --amend ghcr.io/${{ env.OWNER_LC }}/ygege@${{ needs.docker-noupx.outputs.digest-amd64 }} \
               --amend ghcr.io/${{ env.OWNER_LC }}/ygege@${{ needs.docker-noupx.outputs.digest-arm64 }}
@@ -610,9 +565,9 @@ jobs:
         run: |
           VERSION="${{ env.VERSION }}"
           VERSION_NUM="${VERSION#v}"
-          
-          DIGEST=$(docker buildx imagetools inspect "uwucode/ygege:${VERSION_NUM}-noupx" --format '{{json .Manifest}}' | jq -r '.digest')
-          
+
+          DIGEST=$(docker buildx imagetools inspect "ghcr.io/${{ env.OWNER_LC }}/ygege:${VERSION_NUM}-noupx" --format '{{json .Manifest}}' | jq -r '.digest')
+
           echo "IMAGE_DIGEST=$DIGEST" >> $GITHUB_OUTPUT
           echo "Manifest digest (noupx): $DIGEST"
 
@@ -640,12 +595,6 @@ jobs:
       - name: Install Trivy
         uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.5
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
@@ -656,23 +605,15 @@ jobs:
       - name: Sign images
         run: |
           cosign sign --recursive ghcr.io/${REPOSITORY_LC}@${{ needs.publish.outputs.image_digest }}
-          cosign sign --recursive ${{ env.DOCKER_HUB }}@${{ needs.publish.outputs.image_digest }}
           cosign sign --recursive ghcr.io/${REPOSITORY_LC}@${{ needs.merge_manifest_noupx.outputs.image_digest }}
-          cosign sign --recursive ${{ env.DOCKER_HUB }}@${{ needs.merge_manifest_noupx.outputs.image_digest }}
 
       - name: Generate SBOMs
         run: |
           trivy image --format cyclonedx --output ygege-ghcr-image-${{ env.VERSION }}.sbom \
             ghcr.io/${REPOSITORY_LC}@${{ needs.publish.outputs.image_digest }}
 
-          trivy image --format cyclonedx --output ygege-dockerhub-image-${{ env.VERSION }}.sbom \
-            ${{ env.DOCKER_HUB }}@${{ needs.publish.outputs.image_digest }}
-
           trivy image --format cyclonedx --output ygege-ghcr-image-${{ env.VERSION }}-noupx.sbom \
             ghcr.io/${REPOSITORY_LC}@${{ needs.merge_manifest_noupx.outputs.image_digest }}
-
-          trivy image --format cyclonedx --output ygege-dockerhub-image-${{ env.VERSION }}-noupx.sbom \
-            ${{ env.DOCKER_HUB }}@${{ needs.merge_manifest_noupx.outputs.image_digest }}
 
       - name: Attest SBOMs with CycloneDX type
         run: |
@@ -682,19 +623,9 @@ jobs:
             ghcr.io/${REPOSITORY_LC}@${{ needs.publish.outputs.image_digest }}
 
           cosign attest \
-            --predicate ygege-dockerhub-image-${{ env.VERSION }}.sbom \
-            --type cyclonedx \
-            ${{ env.DOCKER_HUB }}@${{ needs.publish.outputs.image_digest }}
-
-          cosign attest \
             --predicate ygege-ghcr-image-${{ env.VERSION }}-noupx.sbom \
             --type cyclonedx \
             ghcr.io/${REPOSITORY_LC}@${{ needs.merge_manifest_noupx.outputs.image_digest }}
-
-          cosign attest \
-            --predicate ygege-dockerhub-image-${{ env.VERSION }}-noupx.sbom \
-            --type cyclonedx \
-            ${{ env.DOCKER_HUB }}@${{ needs.merge_manifest_noupx.outputs.image_digest }}
 
       - name: Upload SBOMs to release
         env:
@@ -702,9 +633,7 @@ jobs:
         run: |
           gh release upload ${{ env.VERSION }} \
             ygege-ghcr-image-${{ env.VERSION }}.sbom \
-            ygege-dockerhub-image-${{ env.VERSION }}.sbom \
             ygege-ghcr-image-${{ env.VERSION }}-noupx.sbom \
-            ygege-dockerhub-image-${{ env.VERSION }}-noupx.sbom \
             --clobber
 
   verify:
@@ -733,15 +662,7 @@ jobs:
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
-          cosign verify ${{ env.DOCKER_HUB }}@${{ needs.publish.outputs.image_digest }} \
-            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-
           cosign verify ghcr.io/${REPOSITORY_LC}@${{ needs.merge_manifest_noupx.outputs.image_digest }} \
-            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-
-          cosign verify ${{ env.DOCKER_HUB }}@${{ needs.merge_manifest_noupx.outputs.image_digest }} \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
@@ -752,17 +673,7 @@ jobs:
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
 
-          cosign verify-attestation ${{ env.DOCKER_HUB }}@${{ needs.publish.outputs.image_digest }} \
-            --type cyclonedx \
-            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-
           cosign verify-attestation ghcr.io/${REPOSITORY_LC}@${{ needs.merge_manifest_noupx.outputs.image_digest }} \
-            --type cyclonedx \
-            --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
-            --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
-
-          cosign verify-attestation ${{ env.DOCKER_HUB }}@${{ needs.merge_manifest_noupx.outputs.image_digest }} \
             --type cyclonedx \
             --certificate-identity "https://github.com/${{ github.workflow_ref }}" \
             --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
